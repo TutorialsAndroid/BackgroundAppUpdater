@@ -317,7 +317,7 @@
 
 `And this will be used MainActivity Java Class file`
 
-public class MainActivity extends AppCompatActivity {
+    public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
