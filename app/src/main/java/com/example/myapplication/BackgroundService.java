@@ -3,6 +3,7 @@ package com.example.myapplication;
 import android.annotation.SuppressLint;
 import android.app.DownloadManager;
 import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -13,14 +14,17 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 import android.webkit.URLUtil;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 
 import org.jsoup.Jsoup;
@@ -30,11 +34,45 @@ import java.util.Objects;
 
 public class BackgroundService extends Service {
 
-    private final static int INTERVAL = 1000 * 60 * 2; //2 minutes
+    private final static int INTERVAL = 30000;
     Handler mHandler = new Handler();
 
     private static File apkPath = new File(Environment.getExternalStoragePublicDirectory
-            (Environment.DIRECTORY_DOWNLOADS), "app-debug.apk");
+            (Environment.DIRECTORY_DOWNLOADS), "main.apk");
+
+    @Override
+    public void onCreate(){
+        super.onCreate();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            startMyOwnForeground();
+        else
+            startForeground(1, new Notification());
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    private void startMyOwnForeground(){
+        String NOTIFICATION_CHANNEL_ID = "com.example.myapplication";
+        String channelName = "BackgroundApp";
+
+        NotificationChannel notificationChannel =
+                new NotificationChannel(NOTIFICATION_CHANNEL_ID, channelName,
+                        NotificationManager.IMPORTANCE_NONE);
+
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        Objects.requireNonNull(manager).createNotificationChannel(notificationChannel);
+
+        NotificationCompat.Builder notificationBuilder =
+                new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID);
+
+        Notification notification = notificationBuilder.setOngoing(true)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle("App is running in background")
+                .setPriority(NotificationManager.IMPORTANCE_MIN)
+                .setCategory(Notification.CATEGORY_SERVICE)
+                .build();
+
+        startForeground(2, notification);
+    }
 
     @Nullable
     @Override
@@ -49,6 +87,7 @@ public class BackgroundService extends Service {
         // do your jobs here
         startTask();
         return super.onStartCommand(intent, flags, startId);
+
     }
 
     Runnable mHandlerTask = new Runnable()
@@ -133,11 +172,10 @@ public class BackgroundService extends Service {
 
         private void downloadManager()
         {
-
             //Path where the apk will be downloaded
-            //File path = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + "app-debug.apk");
+            //File path = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + "main.apk");
 
-            String URL = "https://github.com/TutorialsAndroid/App/raw/master/app-debug.apk";
+            String URL = "https://github.com/TutorialsAndroid/BackgroundAppUpdater/raw/master/app/main.apk";
             DownloadManager.Request request = new DownloadManager.Request(
                     Uri.parse(URL)
             );
@@ -172,29 +210,33 @@ public class BackgroundService extends Service {
 
         //This method will start a notification service when apk has been downloaded.
         BroadcastReceiver onComplete = new BroadcastReceiver() {
-            public void onReceive(Context ctxt, Intent intent) {
-                
+            public void onReceive(Context context, Intent intent) {
+                Toast.makeText(context, "download complete", Toast.LENGTH_SHORT).show();
+                //TODO Show a notification to user
+                String NOTIFICATION_CHANNEL_ID = "notification";
 
-                intent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
-                intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                intent.setData(Uri.fromFile(apkPath));
+                NotificationCompat.Builder builder =
+                        new NotificationCompat.Builder(context,NOTIFICATION_CHANNEL_ID);
 
-                PendingIntent contentIntent = PendingIntent.getActivity(ctxt, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+                //intent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
+                //intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                //intent.setData(Uri.fromFile(apkPath));
 
-                NotificationCompat.Builder b = new NotificationCompat.Builder(ctxt);
+                //PendingIntent contentIntent = PendingIntent.getActivity(context, 0,
+                        //intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-                b.setAutoCancel(true)
+                builder.setAutoCancel(true)
                         .setDefaults(Notification.DEFAULT_ALL)
                         .setWhen(System.currentTimeMillis())
                         .setSmallIcon(R.mipmap.ic_launcher)
                         .setContentTitle("Update Complete")
                         .setContentText("Install the app now to latest version")
                         .setDefaults(Notification.DEFAULT_LIGHTS| Notification.DEFAULT_SOUND)
-                        .setContentIntent(contentIntent)
+                        //.setContentIntent(contentIntent)
                         .setContentInfo("Info");
 
-                NotificationManager notificationManager = (NotificationManager) ctxt.getSystemService(Context.NOTIFICATION_SERVICE);
-                Objects.requireNonNull(notificationManager).notify(1, b.build());
+                NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                Objects.requireNonNull(notificationManager).notify(1, builder.build());
             }
         };
     }
