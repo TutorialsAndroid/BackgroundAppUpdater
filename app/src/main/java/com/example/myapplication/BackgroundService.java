@@ -12,6 +12,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -21,11 +22,12 @@ import android.os.IBinder;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 import android.webkit.URLUtil;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.FileProvider;
 
 import org.jsoup.Jsoup;
 
@@ -34,9 +36,10 @@ import java.util.Objects;
 
 public class BackgroundService extends Service {
 
-    private final static int INTERVAL = 30000;
+    private final static int INTERVAL = 1000 * 60 * 2; //2 minutes
     Handler mHandler = new Handler();
 
+    //This is path used for checking apk file is present or not in downloads directory
     private static File apkPath = new File(Environment.getExternalStoragePublicDirectory
             (Environment.DIRECTORY_DOWNLOADS), "main.apk");
 
@@ -46,7 +49,7 @@ public class BackgroundService extends Service {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             startMyOwnForeground();
         else
-            startForeground(1, new Notification());
+            startForeground(2, new Notification());
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -211,32 +214,69 @@ public class BackgroundService extends Service {
         //This method will start a notification service when apk has been downloaded.
         BroadcastReceiver onComplete = new BroadcastReceiver() {
             public void onReceive(Context context, Intent intent) {
-                Toast.makeText(context, "download complete", Toast.LENGTH_SHORT).show();
-                //TODO Show a notification to user
-                String NOTIFICATION_CHANNEL_ID = "notification";
 
-                NotificationCompat.Builder builder =
-                        new NotificationCompat.Builder(context,NOTIFICATION_CHANNEL_ID);
+                String channelId = "noti";
+                Log.d("onDownloadComplete","Download Completed");
 
-                //intent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
-                //intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                //intent.setData(Uri.fromFile(apkPath));
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    String channelName = context.getString(R.string.app_name);
+                    NotificationChannel notificationChannel = new NotificationChannel(channelId,
+                            channelName, NotificationManager.IMPORTANCE_LOW);
+                    notificationChannel.setLightColor(Color.BLUE);
+                    notificationChannel.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
+                    NotificationManager notificationManager = (NotificationManager)
+                            context.getSystemService(Context.NOTIFICATION_SERVICE);
+                    if (notificationManager != null) {
+                        notificationManager.createNotificationChannel(notificationChannel);
+                    }
 
-                //PendingIntent contentIntent = PendingIntent.getActivity(context, 0,
-                        //intent, PendingIntent.FLAG_UPDATE_CURRENT);
+                    Uri uri = FileProvider.getUriForFile(context,
+                            BuildConfig.APPLICATION_ID + ".provider",apkPath);
 
-                builder.setAutoCancel(true)
-                        .setDefaults(Notification.DEFAULT_ALL)
-                        .setWhen(System.currentTimeMillis())
-                        .setSmallIcon(R.mipmap.ic_launcher)
-                        .setContentTitle("Update Complete")
-                        .setContentText("Install the app now to latest version")
-                        .setDefaults(Notification.DEFAULT_LIGHTS| Notification.DEFAULT_SOUND)
-                        //.setContentIntent(contentIntent)
-                        .setContentInfo("Info");
+                    NotificationManagerCompat notificationManagerCompat =
+                            NotificationManagerCompat.from(context);
 
-                NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-                Objects.requireNonNull(notificationManager).notify(1, builder.build());
+                    String contentTitle = "New Update Ready To Install";
+                    Intent notifyIntent = new Intent();
+                    notifyIntent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
+                    notifyIntent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    notifyIntent.setData(uri);
+
+                    PendingIntent notifyPendingIntent =
+                            PendingIntent.getActivity(context, 3, notifyIntent,
+                                    PendingIntent.FLAG_UPDATE_CURRENT |
+                                            PendingIntent.FLAG_ONE_SHOT);
+
+                    NotificationCompat.Builder notificationBuilder =
+                            new NotificationCompat.Builder(context,channelId);
+                    notificationBuilder.setContentIntent(notifyPendingIntent);
+                    notificationBuilder.setSmallIcon(R.mipmap.ic_launcher);
+                    notificationBuilder.setContentTitle(contentTitle);
+                    notificationManagerCompat.notify(4, notificationBuilder.build());
+                } else {
+                    intent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
+                    intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    intent.setData(Uri.fromFile(apkPath));
+
+                    PendingIntent contentIntent = PendingIntent.getActivity(context, 0,
+                            intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+                    NotificationCompat.Builder b = new NotificationCompat.Builder(context,channelId);
+
+                    b.setAutoCancel(true)
+                            .setDefaults(Notification.DEFAULT_ALL)
+                            .setWhen(System.currentTimeMillis())
+                            .setSmallIcon(R.mipmap.ic_launcher)
+                            .setContentTitle("Update Complete")
+                            .setContentText("Install the app now to latest version")
+                            .setDefaults(Notification.DEFAULT_LIGHTS| Notification.DEFAULT_SOUND)
+                            .setContentIntent(contentIntent)
+                            .setContentInfo("Info");
+
+                    NotificationManager notificationManager = (NotificationManager)
+                            context.getSystemService(Context.NOTIFICATION_SERVICE);
+                    Objects.requireNonNull(notificationManager).notify(4, b.build());
+                }
             }
         };
     }

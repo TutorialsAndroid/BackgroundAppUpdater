@@ -8,6 +8,7 @@ import androidx.core.content.ContextCompat;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
@@ -19,12 +20,16 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        startService(new Intent(this, BackgroundService.class));
-
-        ActivityCompat.requestPermissions(MainActivity.this,
-                new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                1);
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            //Request Storage Permissions On Android Version 6.0 And Above
+            ActivityCompat.requestPermissions(MainActivity.this,
+                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,
+                            Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    1);
+        } else {
+            //Here we start the service
+            startService(new Intent(this, BackgroundService.class));
+        }
     }
 
     @Override
@@ -41,6 +46,8 @@ public class MainActivity extends AppCompatActivity {
                 // contacts-related task you need to do.
                 //Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show();
                 Log.d("PERMISSIONS","GRANTED");
+                //Here we start the service
+                startService(new Intent(this, BackgroundService.class));
             } else {
 
                 // permission denied, boo! Disable the

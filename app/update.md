@@ -1,1 +1,1 @@
-<div class="content" itemprop="softwareVersion">3.0</div>
+<div class="content" itemprop="softwareVersion">4.0</div>
