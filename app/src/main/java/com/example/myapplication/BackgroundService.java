@@ -19,7 +19,6 @@ import android.os.IBinder;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 import android.webkit.URLUtil;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
@@ -82,7 +81,9 @@ public class BackgroundService extends Service {
         {
             try {
                 return
-                        Jsoup.connect("http://github.com/TutorialsAndroid/App/blob/master/README.md")
+                        //Put your github url where you have located update.md file in github
+                        //like i have used update.md file url you should replace this url with your own.
+                        Jsoup.connect("https://github.com/TutorialsAndroid/BackgroundAppUpdater/blob/master/app/update.md")
                                 .timeout(10000)
                                 .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
                                 .referrer("http://www.github.com")
@@ -142,9 +143,8 @@ public class BackgroundService extends Service {
             );
 
             //Here we will guess fileName and fileExtension
-            String url = URL;
-            String fileExtenstion = MimeTypeMap.getFileExtensionFromUrl(url);
-            String name = URLUtil.guessFileName(url, null, fileExtenstion);
+            String fileExtenstion = MimeTypeMap.getFileExtensionFromUrl(URL);
+            String name = URLUtil.guessFileName(URL, null, fileExtenstion);
 
             // Title of the Download Notification
             request.setTitle(name);
