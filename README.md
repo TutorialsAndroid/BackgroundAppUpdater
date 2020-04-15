@@ -4,7 +4,7 @@
 
 `We will use github to check app version update. Create update.md file somewhere in your git repo and put this code in it`
 
-	`<div class="content" itemprop="softwareVersion">4.0</div>`
+	<div class="content" itemprop="softwareVersion">4.0</div>
 
 
 `Put this in your build.gradle file`
