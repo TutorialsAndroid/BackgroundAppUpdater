@@ -3,7 +3,6 @@ package com.example.myapplication;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.content.Context;
@@ -19,7 +18,6 @@ import android.widget.Toast;
 import org.jsoup.Jsoup;
 
 import java.io.File;
-import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -32,6 +30,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        //Util.isConnectedToInternet(this);
+
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             //Request Storage Permissions On Android Version 6.0 And Above
             ActivityCompat.requestPermissions(MainActivity.this,
@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
             startService(new Intent(this, BackgroundService.class));
         }
 
-        new FetchAppVersion(this).execute();
+        new DeleteOldApk(this).execute();
     }
 
     @Override
@@ -73,12 +73,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public static class FetchAppVersion
+    //This method will delete the old apk when
+    //user installs the update after update is installed
+    //the old apk file will be deleted.
+    public static class DeleteOldApk
             extends AsyncTask<String, Void, String> {
 
         private Context context;
 
-        FetchAppVersion(Context context) {
+        DeleteOldApk(Context context) {
             this.context = context;
         }
 

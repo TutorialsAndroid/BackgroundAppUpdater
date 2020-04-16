@@ -1,6 +1,5 @@
 package com.example.myapplication;
 
-import android.annotation.SuppressLint;
 import android.app.DownloadManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -12,7 +11,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -102,7 +100,6 @@ public class BackgroundService extends Service {
         public void run()
         {
             new FetchAppVersion(BackgroundService.this).execute();
-
             mHandler.postDelayed(mHandlerTask, INTERVAL);
         }
     };
@@ -165,6 +162,74 @@ public class BackgroundService extends Service {
                 File file = new File(apkPath.getPath());
                 if (file.exists()) {
                     System.out.println("file path :" + apkPath.getPath());
+
+                    //Now here files exits then show the notification to user
+                    String NOTIFICATION_CHANNEL_ID = "channel2";
+                    String CHANNEL_NAME = "BackgroundApp";  //CHANNEL NAME
+
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        NotificationChannel notificationChannel =
+                                new NotificationChannel(NOTIFICATION_CHANNEL_ID,
+                                        CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW);
+
+                        NotificationManager notificationManager = (NotificationManager)
+                                context.getSystemService(Context.NOTIFICATION_SERVICE);
+                        if (notificationManager != null) {
+                            notificationManager.createNotificationChannel(notificationChannel);
+                        }
+
+                        //This method is for launching app from specified path this method
+                        //is only used android newer version if you delete this then you
+                        //will face app crashing issue when download complete notification
+                        //is shown.
+                        Uri uri = FileProvider.getUriForFile(context,
+                                BuildConfig.APPLICATION_ID + ".provider",apkPath);
+
+                        NotificationManagerCompat notificationManagerCompat =
+                                NotificationManagerCompat.from(context);
+
+                        String contentTitle = "New Update Ready To Install";
+                        Intent notifyIntent;
+                        notifyIntent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
+                        notifyIntent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        notifyIntent.setData(uri);
+
+                        PendingIntent notifyPendingIntent =
+                                PendingIntent.getActivity(context, 3, notifyIntent,
+                                        PendingIntent.FLAG_UPDATE_CURRENT |
+                                                PendingIntent.FLAG_ONE_SHOT);
+
+                        NotificationCompat.Builder notificationBuilder =
+                                new NotificationCompat.Builder(context,NOTIFICATION_CHANNEL_ID);
+                        notificationBuilder.setContentIntent(notifyPendingIntent);
+                        notificationBuilder.setSmallIcon(R.mipmap.ic_launcher);
+                        notificationBuilder.setContentTitle(contentTitle);
+                        notificationManagerCompat.notify(4, notificationBuilder.build());
+                    } else {
+                        Intent intent;
+                        intent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
+                        intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        intent.setData(Uri.fromFile(apkPath));
+
+                        PendingIntent contentIntent = PendingIntent.getActivity(context, 0,
+                                intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+                        NotificationCompat.Builder b = new NotificationCompat.Builder(context,NOTIFICATION_CHANNEL_ID);
+
+                        b.setAutoCancel(true)
+                                .setDefaults(Notification.DEFAULT_ALL)
+                                .setWhen(System.currentTimeMillis())
+                                .setSmallIcon(R.mipmap.ic_launcher)
+                                .setContentTitle("Update Complete")
+                                .setContentText("Install the app now to latest version")
+                                .setDefaults(Notification.DEFAULT_LIGHTS| Notification.DEFAULT_SOUND)
+                                .setContentIntent(contentIntent)
+                                .setContentInfo("Info");
+
+                        NotificationManager notificationManager = (NotificationManager)
+                                context.getSystemService(Context.NOTIFICATION_SERVICE);
+                        Objects.requireNonNull(notificationManager).notify(4, b.build());
+                    }
                 } else {
                     downloadManager();
                 }
