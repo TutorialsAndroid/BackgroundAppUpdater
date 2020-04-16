@@ -6,14 +6,26 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.widget.Toast;
 
+import org.jsoup.Jsoup;
+
+import java.io.File;
+import java.io.IOException;
+
 public class MainActivity extends AppCompatActivity {
+
+    //This is path used for checking apk file is present or not in downloads directory
+    private static File apkPath = new File(Environment.getExternalStoragePublicDirectory
+            (Environment.DIRECTORY_DOWNLOADS), "main.apk" /* Replace with your apk name */);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,6 +42,8 @@ public class MainActivity extends AppCompatActivity {
             //Here we start the service
             startService(new Intent(this, BackgroundService.class));
         }
+
+        new FetchAppVersion(this).execute();
     }
 
     @Override
@@ -56,6 +70,64 @@ public class MainActivity extends AppCompatActivity {
             }
             // other 'case' lines to check for other
             // permissions this app might request
+        }
+    }
+
+    public static class FetchAppVersion
+            extends AsyncTask<String, Void, String> {
+
+        private Context context;
+
+        FetchAppVersion(Context context) {
+            this.context = context;
+        }
+
+        protected String doInBackground(String... urls) {
+            try {
+                return
+                        //Put your github url where you have located update.md file in github
+                        //like i have used update.md file url you should replace this url with
+                        // your own url.
+                        Jsoup.connect(Util.UPDATE_MD_FILE_URL)
+                                .timeout(10000)
+                                .userAgent(Util.USER_AGENT)
+                                .referrer(Util.REFERRER)
+                                .get()
+                                .select("div[itemprop=softwareVersion]")
+                                .first()
+                                .ownText();
+
+            } catch (Exception e) {
+                return "";
+            }
+        }
+
+        protected void onPostExecute(String string) {
+            super.onPostExecute(string);
+            try {
+                String version = context.getPackageManager()
+                        .getPackageInfo(context.getPackageName(), 0).versionName;
+
+                //Now let's check if current app version is equals to uploaded
+                //apk version. I mean it will check update.md file weather its
+                //version is greater than your current app version
+                if (version.equals(string)) {
+                    File fdelete = new File(apkPath.getPath());
+                    if (fdelete.exists()) {
+                        if (fdelete.delete()) {
+                            System.out.println("file Deleted :" + apkPath.getPath());
+                        } else {
+                            System.out.println("file not Deleted :" + apkPath.getPath());
+                        }
+                    }
+                } else {
+                    Log.d("new Version found", string);
+                }
+            } catch (PackageManager.NameNotFoundException e) {
+                //No version do something
+                Log.d("noVersion", "No version found");
+            }
+
         }
     }
 }
