@@ -2,6 +2,9 @@
 
 **This sample app will demonstrate you to how to update your app in foreground. This tutorial will also explain you how to update your app from external website using JSOUP library**
 
+
+[`Heatic Debate App Download Now`](https://play.google.com/store/apps/details?id=com.asm.heatic)
+
 `We will use github to check app version update. Create update.md file somewhere in your git repo and put this code in it`
 
 	<div class="content" itemprop="softwareVersion">4.0</div>
