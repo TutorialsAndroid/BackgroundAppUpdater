@@ -1,6 +1,6 @@
 # BackgroundAppUpdater
 
-**This sample app will demonstrate you to how to update your app in foreground. This tutorial will also explain you how to update your app from external website using JSOUP library**
+**This sample app will demonstrate you to how to update your app in foreground. This tutorial will also explain you how to update your app from external website using JSOUP library. This is just sample demonstration apply your some logic if you have any problems or contact me.**
 
 
 [`Heatic Debate App Download Now`](https://play.google.com/store/apps/details?id=com.asm.heatic)
