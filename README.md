@@ -5,6 +5,10 @@
 
 [`Heatic Debate App Download Now`](https://play.google.com/store/apps/details?id=com.asm.heatic)
 
+## And Don't Forget To Follow Me On Instagram
+
+<p align="center">Follow me on instagram to stay up-to-date https://instagram.com/akshaysunilmasram 
+
 `We will use github to check app version update. Create update.md file somewhere in your git repo and put this code in it`
 
 	<div class="content" itemprop="softwareVersion">4.0</div>
